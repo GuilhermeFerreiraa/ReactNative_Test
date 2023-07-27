@@ -1,28 +1,49 @@
-import React, { useState } from "react";
-import { View, Text, StyleSheet } from "react-native";
-import { Picker } from "@react-native-picker/picker";
+import React from "react";
+import { StyleSheet, Text, View } from "react-native";
+import RNPickerSelect from "react-native-picker-select";
 
-const Selector = () => {
-  const [selectedGenre, setSelectedGenre] = useState(""); // Estado para armazenar o gênero selecionado
-
-  // Função para atualizar o estado quando um gênero é selecionado
-  const handleGenreChange = (itemValue) => {
-    setSelectedGenre(itemValue);
+const Selector = ({ handleChangeValue }) => {
+  const placeholder = {
+    label: "Selecionar Gênero..",
+    value: null,
+    color: "#404040",
   };
+
+  const items = [
+    { label: "Masculino", value: "male" },
+    { label: "Feminino", value: "female" },
+    { label: "Outros", value: "others" },
+  ];
 
   return (
     <View style={styles.container}>
       <Text style={styles.label}>Selecione um gênero:</Text>
-      <Picker
-        selectedValue={selectedGenre}
-        onValueChange={handleGenreChange}
-        style={styles.picker}
-      >
-        <Picker.Item label="Selecione" value="" enabled={false} />
-        <Picker.Item label="Masculino" value="male" />
-        <Picker.Item label="Feminino" value="female" />
-        <Picker.Item label="Outros" value="others" />
-      </Picker>
+      <RNPickerSelect
+        placeholder={placeholder}
+        items={items}
+        onValueChange={handleChangeValue}
+        style={{
+          inputIOS: {
+            fontSize: 16,
+            paddingVertical: 12,
+            paddingHorizontal: 10,
+            borderWidth: 1,
+            borderColor: "gray",
+            borderRadius: 4,
+            color: "black",
+          },
+          inputAndroid: {
+            fontSize: 12,
+            paddingHorizontal: 10,
+            paddingVertical: 6,
+            borderWidth: 2,
+            borderColor: "#e5e5e5",
+            backgroundColor: "#e5e5e580",
+            borderRadius: 20,
+            color: "#404040",
+          },
+        }}
+      />
     </View>
   );
 };

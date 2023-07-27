@@ -1,31 +1,77 @@
-import { SafeAreaView, Text, View } from "react-native";
+import DateTimePicker from "@react-native-community/datetimepicker";
+import { Text, View } from "react-native";
 import Input from "../components/Input";
 
 import { useState } from "react";
 import { ScrollView, StyleSheet, TouchableOpacity } from "react-native";
-import Selector from "../components/Selector";
-import utils from "../utils";
 import ContainerSafeArea from "../components/ContainerSafeArea";
+import {
+  default as CustomButtom,
+  default as CustomButton,
+} from "../components/CustomButton";
+import Flex from "../components/Flex";
+import Loader from "../components/Loader";
+import Selector from "../components/Selector";
+import { createUser } from "../services/UserController";
+import utils from "../utils";
 
 const HomeScreen = ({ navigation }) => {
   const [user, setUser] = useState({
     document: "",
     name: "",
     lastName: "",
-    name: "",
-    dateOfBirth: "",
+    dateOfBirth: new Date(),
     email: "",
     gender: "",
   });
+  const [isLoading, setIsLoading] = useState(false);
 
-  const [errors, setErrors] = useState([
-    { field: "document", value: false, textMessage: "" },
-    { field: "name", value: false, textMessage: "" },
-    { field: "lastName", value: false, textMessage: "" },
-    { field: "dateOfBirth", value: false, textMessage: "" },
-    { field: "email", value: false, textMessage: "" },
-    { field: "gender", value: false, textMessage: "" },
-  ]);
+  const [showDatePicker, setShowDatePicker] = useState(false);
+
+  const checkData = () => {
+    if (user.name.length <= 2 || user.lastName.length <= 2) {
+      return false;
+    }
+
+    if (!utils.isValidCPF(user.document)) {
+      return false;
+    }
+
+    if (!utils.validateEmail(user.email)) {
+      return false;
+    }
+
+    const isUnder18 = isUnder18YearsOld(user.dateOfBirth);
+    if (!isUnder18) {
+      return false;
+    }
+
+    if (user.gender !== "Masculino" && user.gender !== "Feminino") {
+      return false;
+    }
+
+    return true;
+  };
+
+  const handleResetForm = () => {
+    setUser({
+      document: "",
+      name: "",
+      lastName: "",
+      name: "",
+      dateOfBirth: new Date(),
+      email: "",
+      gender: "",
+    });
+  };
+
+  const handleNavigateListAllDataScreen = () => {
+    navigation.navigate("ScreenListOfUsers");
+  };
+
+  const handleToggleDatepicker = () => {
+    setShowDatePicker(true);
+  };
 
   const handleInputChange = (text, field) => {
     setUser((prevState) => ({
@@ -34,29 +80,32 @@ const HomeScreen = ({ navigation }) => {
     }));
   };
 
-  const checkData = () => {
-    if (utils.isValidCPF(user.document)) {
-      console.log("========== CPF É VALIDO ! =============");
-      console.log(user);
+  const handleChangeDatePicker = (event, selectedDate) => {
+    let currentDate = selectedDate || user.dateOfBirth;
+    setUser((prevState) => ({
+      ...prevState,
+      dateOfBirth: currentDate,
+    }));
+    setShowDatePicker(false);
+  };
+
+  const HandleCreateUser = async () => {
+    const params = {
+      name: user.name,
+      lastName: user.lastName,
+      document: user.document,
+      email: user.email,
+      dateOfBirth: user.dateOfBirth.toLocaleString(),
+      gender: user.gender,
+    };
+
+    if (checkData) {
+      setIsLoading(true);
+      const newUser = await createUser(params);
+      setIsLoading(false);
     } else {
-      console.log("========== CPF É INVALIDO ! =============");
+      console.log("preencha os dados necessários");
     }
-  };
-
-  const cleanForm = () => {
-    setUser({
-      document: "",
-      name: "",
-      lastName: "",
-      name: "",
-      dateOfBirth: "",
-      email: "",
-      gender: "",
-    });
-  };
-
-  const handleNavigateListAllDataScreen = () => {
-    navigation.navigate("ScreenListOfUsers");
   };
 
   return (
@@ -81,6 +130,7 @@ const HomeScreen = ({ navigation }) => {
               keyboardType="decimal-pad"
               error={user.document && !utils.isValidCPF(user.document)}
               error_text={"CPF Inválido!"}
+              maxLength={14}
               onChangeText={(v) => handleInputChange(v, "document")}
             />
 
@@ -102,39 +152,59 @@ const HomeScreen = ({ navigation }) => {
             />
 
             <Input
-              value={user.dateOfBirth}
-              label="*Data de Nascimento"
-              placeholder="Data de Nascimento"
-              onChangeText={(v) => handleInputChange(v, "dateOfBirth")}
-            />
-
-            <Input
               label="*E-mail"
               value={user.email}
-              error={user.email && !utils.validateEmail(user.email)}
-              error_text={"*E-mail Inválido!"}
+              returnKeyType="done"
               placeholder="E-mail"
+              keyboardType="email-address"
+              error_text={"*E-mail Inválido!"}
               onChangeText={(v) => handleInputChange(v, "email")}
+              error={user.email && utils.validateEmail(user.email)}
             />
 
-            <Selector />
+            <View style={styles.contianerDateOfBirth}>
+              <TouchableOpacity onPress={() => handleToggleDatepicker()}>
+                <Flex style={styles.dateOfBirth}>
+                  <Text style={styles.dateOfBirthText}>
+                    *Data de Nascimento:
+                  </Text>
+                  <Text style={styles.dateOfBirthText}>
+                    {utils.formatDateToDayMonthYear(user.dateOfBirth)}
+                  </Text>
+                </Flex>
+              </TouchableOpacity>
+
+              {showDatePicker && (
+                <DateTimePicker
+                  testID="dateTimePicker"
+                  value={user.dateOfBirth}
+                  mode="date"
+                  display="default"
+                  timeZoneOffsetInMinutes={-180}
+                  onChange={handleChangeDatePicker}
+                />
+              )}
+            </View>
+
+            <Selector
+              handleChangeValue={(v) => handleInputChange(v, "gender")}
+            />
           </View>
 
           <View style={styles.buttonContainer}>
-            <TouchableOpacity style={styles.button} onPress={() => checkData()}>
-              <Text style={styles.buttonText}>Inserir</Text>
-            </TouchableOpacity>
+            <CustomButtom onPress={HandleCreateUser} label="Inserir" />
+
             {user && (
-              <TouchableOpacity
-                style={styles.buttonClean}
-                onPress={() => cleanForm()}
-              >
-                <Text style={styles.buttonCleanFormText}>Recomeçar</Text>
-              </TouchableOpacity>
+              <CustomButton
+                outline
+                label="Recomeçar"
+                onPress={handleResetForm}
+              />
             )}
           </View>
         </View>
       </ScrollView>
+      <Loader isOpen={isLoading} setIsOpen={setIsLoading} />
     </ContainerSafeArea>
   );
 };
@@ -166,35 +236,25 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: 6,
   },
-  button: {
-    backgroundColor: "#007bff",
-    padding: 6,
-    borderRadius: 5,
-    width: '40%',
-    borderWidth: 2,
-    borderColor: "#007bff",
-    alignItems: "center",
-    justifyContent: "center",
+  dateOfBirth: {
+    minWidth: "100%",
+    paddingLeft: 24,
+    marginVertical: 14,
+    alignItems: "flex-start",
+    gap: 10,
   },
-  buttonClean: {
-    backgroundColor: "transparent",
-    padding: 6,
-    borderRadius: 5,
-    borderWidth: 2,
-    borderColor: "#007bff",
-    width: '40%',
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  buttonCleanFormText: {
+  dateOfBirthText: {
     fontSize: 14,
+    textAlign: "left",
+    color: "#404040",
     fontWeight: 600,
-    color: "#007bff",
   },
-  buttonText: {
-    fontSize: 14,
-    fontWeight: 600,
-    color: "#ffff",
+  contianerDateOfBirth: {
+    borderColor: "#e5e5e5",
+    borderWidth: 2,
+    width: "90%",
+    marginVertical: 12,
+    borderRadius: 6,
   },
 });
 

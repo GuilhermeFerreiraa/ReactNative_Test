@@ -1,6 +1,6 @@
 class Utilities {
-  isValidCPF(cpf) {
-    const cleanedCPF = cpf.replace(/\D/g, "");
+  isValidCPF(document) {
+    const cleanedCPF = document.replace(/\D/g, "");
 
     if (cleanedCPF.length !== 11 || /^(\d)\1+$/.test(cleanedCPF)) {
       return false;
@@ -41,8 +41,8 @@ class Utilities {
     return true;
   }
 
-  formatCPF(cpf) {
-    const cleanedCPF = cpf.replace(/\D/g, "");
+  formatCPF(document) {
+    const cleanedCPF = document.replace(/\D/g, "");
 
     const formattedCPF = cleanedCPF.replace(
       /^(\d{3})(\d{3})(\d{3})(\d{2})$/,
@@ -53,14 +53,30 @@ class Utilities {
   }
 
   validateEmail(email) {
-    // Expressão regular para validar o e-mail
     const emailRegex = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
 
     if (!emailRegex.test(email)) {
-      return true
+      return true;
     }
 
-    return null;
+    return false;
+  }
+
+  formatDateToDayMonthYear = (date) => {
+    const day = date.getDate().toString().padStart(2, "0");
+    const month = (date.getMonth() + 1).toString().padStart(2, "0");
+    const year = date.getFullYear();
+    return `${day}/${month}/${year}`;
+  };
+
+  isUnder18YearsOld(age) {
+    const currentDate = new Date();
+    const birthDate = new Date(age);
+    const ageDifferenceInMilliseconds = currentDate - birthDate;
+    const ageDifferenceInYears =
+      ageDifferenceInMilliseconds / (1000 * 60 * 60 * 24 * 365.25);
+
+    return ageDifferenceInYears < 18;
   }
 }
 
