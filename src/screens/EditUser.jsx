@@ -1,20 +1,30 @@
-import { StyleSheet, TouchableOpacity } from "react-native";
+import { Alert, StyleSheet, TouchableOpacity } from "react-native";
 import { ScrollView, Text, View } from "react-native";
 import Input from "../components/Input";
 import CustomButtom from "../components/CustomButton";
 import utils from "../utils";
 import Loader from "../components/Loader";
 import { useState } from "react";
+import { updateUser } from "../services/UserController";
 
 const EditUser = ({ route, navigation }) => {
   const { data } = route.params;
   const [isLoading, setIsLoading] = useState(false);
+  const [user, setUser] = useState(data);
 
   const handleInputChange = (text, field) => {
     setUser((prevState) => ({
       ...prevState,
       [field]: text,
     }));
+  };
+
+  const handleUpdateUser = async () => {
+    setIsLoading(!isLoading)
+    const res = await updateUser(user);
+    Alert.alert(res.message);
+    navigation.goBack();
+    setIsLoading(!isLoading)
   };
 
   return (
@@ -25,7 +35,7 @@ const EditUser = ({ route, navigation }) => {
         <View style={styles.container}>
           <Input
             label="*Nome"
-            value={data.name}
+            value={user.name}
             placeholder="Nome"
             returnKeyType="done"
             onChangeText={(v) => handleInputChange(v, "name")}
@@ -34,7 +44,7 @@ const EditUser = ({ route, navigation }) => {
           <Input
             label="*Sobrenome"
             returnKeyType="done"
-            value={data.lastName}
+            value={user.lastName}
             keyboardType="default"
             placeholder="Sobrenome"
             onChangeText={(v) => handleInputChange(v, "lastName")}
@@ -42,7 +52,7 @@ const EditUser = ({ route, navigation }) => {
 
           <Input
             label="*E-mail"
-            value={data.email}
+            value={user.email}
             placeholder="E-mail"
             keyboardType="email-address"
             error_text={"*E-mail Inválido!"}
@@ -58,7 +68,7 @@ const EditUser = ({ route, navigation }) => {
         </View>
 
         <View style={styles.buttonContainer}>
-          <CustomButtom onPress={() => {}} label="Salvar" />
+          <CustomButtom onPress={handleUpdateUser} label="Salvar" />
           <CustomButtom
             outline
             label="Cancelar"

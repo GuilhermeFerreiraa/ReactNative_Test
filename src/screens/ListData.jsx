@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
+  Alert,
   FlatList,
   Image,
   RefreshControl,
@@ -12,6 +13,7 @@ import ContainerSafeArea from "../components/ContainerSafeArea";
 import DeleteModal from "../components/DeleteModal";
 import Flex from "../components/Flex";
 import Loader from "../components/Loader";
+import { deleteUser, getUsers } from "../services/UserController";
 
 const trash = require("../../assets/icons/trash.png");
 const edit = require("../../assets/icons/edit.png");
@@ -19,31 +21,41 @@ const user = require("../../assets/icons/user.png");
 
 const ListData = ({ navigation }) => {
   const [users, setUsers] = useState([]);
-  const [userItem, setUserItem] = useState();
-  const [isLoading, setIsLoading] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
+  const [userItem, setUserItem] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [isOpenDeleteModal, setIsOpenDeleteModal] = useState(false);
 
   const handleOpenDeleteModal = (item) => {
     setUserItem(item);
-    setIsOpenDeleteModal((prevState) => (prevState ? false : true));
+    setIsOpenDeleteModal(!isOpenDeleteModal);
   };
 
-  const handleDeleteItem = (itemId) => {};
+  const handleDeleteItem = async () => {
+    const status = await deleteUser(userItem.id);
+    setIsOpenDeleteModal(!isOpenDeleteModal);
+
+    Alert.alert(status);
+
+    fetchData();
+  };
 
   const handleNavigateToEdit = (item) => {
     navigation.navigate("EditUserScreen", {
-      data: item
-    })
+      data: item,
+    });
   };
 
-  const onRefresh = () => {
-    setRefreshing(true);
+  const onRefresh = async () => {
+    setIsRefreshing(true);
 
-    setTimeout(() => {
-      fetchData();
-      setRefreshing(false);
-    }, 2000);
+    try {
+      await fetchData();
+    } catch (error) {
+      console.error("Erro ao atualizar dados:", error);
+    }
+
+    setIsRefreshing(false);
   };
 
   const renderItem = ({ item }) => {
@@ -51,6 +63,7 @@ const ListData = ({ navigation }) => {
       <Flex style={card.container}>
         <View style={card.card}>
           <Image style={card.userIcon} source={user} alt="user-icon" />
+
           <Flex>
             <Flex style={card.idText}>
               <View style={card.card_title}>
@@ -62,13 +75,21 @@ const ListData = ({ navigation }) => {
                 <Text>CPF:</Text>
                 <Text>{item.document}</Text>
               </View>
+
               <View style={card.card_subtitle}>
                 <Text>E-mail:</Text>
                 <Text>{item.email}</Text>
               </View>
+
               <View style={card.card_subtitle}>
                 <Text>Gênero:</Text>
-                <Text>{item.gender}</Text>
+                <Text>
+                  {item.gender === "male"
+                    ? "Masculino"
+                    : item.gender === "female"
+                    ? "Feminino"
+                    : "Outros"}
+                </Text>
               </View>
             </Flex>
 
@@ -76,15 +97,10 @@ const ListData = ({ navigation }) => {
               <TouchableOpacity onPress={() => handleNavigateToEdit(item)}>
                 <Image style={card.icon} source={edit} alt="user-icon" />
               </TouchableOpacity>
-              <TouchableOpacity
-                onPress={() => handleOpenDeleteModal(item.name)}
-              >
+
+              <TouchableOpacity onPress={() => handleOpenDeleteModal(item)}>
                 <Image style={card.icon} source={trash} alt="user-icon" />
               </TouchableOpacity>
-              <View style={card.card_subtitle}>
-                <Text>Dt. Nasc.</Text>
-                <Text>{item.dateOfBirth}</Text>
-              </View>
             </View>
           </Flex>
         </View>
@@ -94,48 +110,44 @@ const ListData = ({ navigation }) => {
 
   const ItemSeparator = () => <View style={{ marginVertical: 2 }} />;
 
-  // useEffect(() => {
-  //   const fetchData = async () => {
-  //     try {
-  //       const data = await API.get("/users");
-  //       setUsers(data);
-  //       setIsLoading(false);
-  //     } catch (err) {
-  //       console.error(err);
-  //     }
-  //   };
-  //   fetchData();
-  // }, []);
+  const fetchData = async () => {
+    try {
+      const data = await getUsers();
+      setUsers(data);
+    } catch (err) {
+      console.error("ERRO: ", err);
+    } finally {
+      setIsLoading(false);
+      setIsRefreshing(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
 
   return (
     <ContainerSafeArea>
       <View style={styles.container}>
-        {!users?.length == 0 && (
+        {users?.length == 0 && (
           <Text style={styles.title}>Nenhum Registro</Text>
         )}
 
         <FlatList
-          data={[{
-            "dateOfBirth": "27/07/1995 04:14:52", 
-            "document": "19109319859", 
-            "email": "123@abobrinha.com", 
-            "gender": "male", 
-            "lastName": "pe de feijao", 
-            "name": "joao"
-          }]}
+          data={users}
           renderItem={renderItem}
           refreshControl={
             <RefreshControl
-              refreshing={refreshing}
+              refreshing={isRefreshing}
               onRefresh={onRefresh}
               tintColor="#007bff"
               title="Atualizando lista..."
-              titleColor="#404040   "
+              style={{ color: "#404040" }}
             />
           }
           ItemSeparatorComponent={ItemSeparator}
           contentContainerStyle={styles.flatList}
-          keyExtractor={(i, index) => index.toString()}
+          keyExtractor={(item) => item.id.toString()}
         />
       </View>
 
@@ -144,9 +156,10 @@ const ListData = ({ navigation }) => {
         setIsOpen={setIsOpenDeleteModal}
         label_cancel="Não, cancelar"
         label_confirmAction="Sim, excluir"
-        title_modal={`Deseja Deletar "${userItem}"`}
-        onPress={() => handleDeleteItem(userItem)}
+        title_modal={`Deseja Deletar "${userItem.name}"`}
+        onPress={() => handleDeleteItem()}
       />
+      
       <Loader isOpen={isLoading} setIsOpen={setIsLoading} />
     </ContainerSafeArea>
   );
@@ -165,7 +178,7 @@ const styles = StyleSheet.create({
     marginVertical: 10,
   },
   flatList: {
-    flex: 1,
+    paddingBottom: 10,
   },
   lineData: {
     minWidth: "100%",
@@ -235,8 +248,9 @@ const card = StyleSheet.create({
     height: 24,
   },
   actions: {
-    flex: 0.8,
-    justifyContent: "space-between",
+    flex: 0.85,
+    gap: 10,
+    justifyContent: "center",
     alignItems: "flex-end",
   },
 });

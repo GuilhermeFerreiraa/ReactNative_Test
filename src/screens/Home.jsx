@@ -1,5 +1,5 @@
 import DateTimePicker from "@react-native-community/datetimepicker";
-import { Text, View } from "react-native";
+import { Alert, Text, View } from "react-native";
 import Input from "../components/Input";
 
 import { useState } from "react";
@@ -102,9 +102,11 @@ const HomeScreen = ({ navigation }) => {
     if (checkData) {
       setIsLoading(true);
       const newUser = await createUser(params);
+      handleResetForm()
       setIsLoading(false);
+      Alert.alert("Usuário criado com sucesso!")
     } else {
-      console.log("preencha os dados necessários");
+      Alert.alert("Por favor, preencha os campos obrigatórios!");
     }
   };
 
