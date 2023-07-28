@@ -28,31 +28,6 @@ const HomeScreen = ({ navigation }) => {
 
   const [showDatePicker, setShowDatePicker] = useState(false);
 
-  const checkData = () => {
-    if (user.name.length <= 2 || user.lastName.length <= 2) {
-      return false;
-    }
-
-    if (!utils.isValidCPF(user.document)) {
-      return false;
-    }
-
-    if (!utils.validateEmail(user.email)) {
-      return false;
-    }
-
-    const isUnder18 = isUnder18YearsOld(user.dateOfBirth);
-    if (!isUnder18) {
-      return false;
-    }
-
-    if (user.gender !== "Masculino" && user.gender !== "Feminino") {
-      return false;
-    }
-
-    return true;
-  };
-
   const handleResetForm = () => {
     setUser({
       document: "",
@@ -90,6 +65,34 @@ const HomeScreen = ({ navigation }) => {
   };
 
   const HandleCreateUser = async () => {
+    if (
+      !user.name ||
+      !user.lastName ||
+      !user.document ||
+      !user.email ||
+      !user.dateOfBirth ||
+      !user.gender
+    ) {
+      Alert.alert("Por favor, preencha todos os campos obrigatórios!");
+      return;
+    }
+
+    if (!utils.isValidCPF(user.document)) {
+      Alert.alert("CPF Inválido!");
+      return;
+    }
+
+    if (!utils.validateEmail(user.email)) {
+      Alert.alert("E-mail Inválido!");
+      return;
+    }
+
+    if (utils.isUnder18YearsOld(user.dateOfBirth)) {
+      Alert.alert("O usuário deve ser maior de 18 anos!");
+      return;
+    }
+
+    setIsLoading(true);
     const params = {
       name: user.name,
       lastName: user.lastName,
@@ -99,14 +102,14 @@ const HomeScreen = ({ navigation }) => {
       gender: user.gender,
     };
 
-    if (checkData) {
-      setIsLoading(true);
-      const newUser = await createUser(params);
-      handleResetForm()
+    try {
+      const createdUser = await createUser(params);
+      handleResetForm();
       setIsLoading(false);
-      Alert.alert("Usuário criado com sucesso!")
-    } else {
-      Alert.alert("Por favor, preencha os campos obrigatórios!");
+      Alert.alert("Usuário criado com sucesso!");
+    } catch (error) {
+      setIsLoading(false);
+      Alert.alert("Erro ao criar usuário. Tente novamente mais tarde!");
     }
   };
 
@@ -161,7 +164,7 @@ const HomeScreen = ({ navigation }) => {
               keyboardType="email-address"
               error_text={"*E-mail Inválido!"}
               onChangeText={(v) => handleInputChange(v, "email")}
-              error={user.email && utils.validateEmail(user.email)}
+              error={user.email && !utils.validateEmail(user.email)}
             />
 
             <View style={styles.contianerDateOfBirth}>

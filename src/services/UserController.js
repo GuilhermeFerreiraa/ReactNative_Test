@@ -1,7 +1,7 @@
 
 // URL do NGRok = usada para simular uma API na web, através de um túnel de conexão
 // restrita para uso em ambientes de homologação e desenvolvimento.
-const baseURL = "https://2023-191-5-68-33.ngrok-free.app/api/users";
+const baseURL = "https://5dc5-191-5-68-33.ngrok-free.app/api/users";
 
 // post
 export const createUser = async (userData) => {

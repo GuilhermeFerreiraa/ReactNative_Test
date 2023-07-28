@@ -57,7 +57,7 @@ const EditUser = ({ route, navigation }) => {
             keyboardType="email-address"
             error_text={"*E-mail Inválido!"}
             onChangeText={(v) => handleInputChange(v, "email")}
-            error={data.email && utils.validateEmail(data.email)}
+            error={data.email && !utils.validateEmail(data.email)}
           />
 
           <Input
